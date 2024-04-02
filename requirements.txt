@@ -1,2 +1,5 @@
-readmeai
 ipython
+django
+requests 
+django-environ
+markdown

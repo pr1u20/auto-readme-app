@@ -30,12 +30,12 @@ class ChatGPT():
 if __name__ == "__main__":
 
     owner = "pr1u20"  # Replace with the repository owner's username
-    repo = "pyaocs"  # Replace with the repository name
+    repo = "auto-readme-app"  # Replace with the repository name
 
     user_content = generate_user_content(owner, repo, save_as_md=True)
 
     chatgpt = ChatGPT()
     chatgpt.feed_user_content(user_content,
-                              additional_context="The repository can be installed as pip install pyaocs.")
+                              additional_context=None)
     
     chatgpt.save_as_md(f"{repo}_readme.md")

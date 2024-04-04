@@ -16,10 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from readme_generator.views import index
+from readme_generator.views import index, get_updated_content
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
+    path('get-updated-content/', get_updated_content, name='get-updated-content')
 ]
 

@@ -1,24 +1,38 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 import os
-print(os.getcwd())
 from github_requests import generate_user_content  # Adjust the import path as necessary
 from chatgpt_requests import ChatGPT
 import markdown
+from django.http import JsonResponse
 
 def index(request):
-    readme_content_html = ""
+    chatgpt = ChatGPT()
+
     if request.method == 'POST':
         repo_url = request.POST.get('repo_url', '')
         if repo_url:
             owner, repo = repo_url.split('/')[-2:]  # Extract owner and repo name from URL
             
             user_content = generate_user_content(owner, repo)
-            chatgpt = ChatGPT()
-            readme_content_md = chatgpt.feed_user_content(user_content,
-                                                       additional_context="The repository can be installed as pip install pyaocs.")
+
+            response_stream = chatgpt.get_stream(user_content, 
+                                              additional_context = None)
+
+        # Process the stream as it arrives.
+        for completion in response_stream:
             
-            # Convert the readme content to HTML
-            readme_content_html = markdown.markdown(readme_content_md)
+            chatgpt.data_processing(completion)
+
+            # In your index view
+            request.session['readme_content_html'] = chatgpt.content_html
+            request.session.modified = True
     
-    return render(request, 'index.html', {'readme_content': readme_content_html})
+    return render(request, 'index.html', {'readme_content': chatgpt.content_html})
+
+def get_updated_content(request):
+    # Here, generate or retrieve your updated HTML content
+    
+    updated_html_content = request.session.get('readme_content_html', 'No new content.')
+
+    return JsonResponse({"html_content": updated_html_content})

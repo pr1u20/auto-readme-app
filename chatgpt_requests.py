@@ -82,9 +82,9 @@ class YourCustomMarkdownExtension(Extension):
 if __name__ == "__main__":
 
     owner = "pr1u20"  # Replace with the repository owner's username
-    repo = "auto-readme-app"  # Replace with the repository name
+    repo = "pyaocs"  # Replace with the repository name
 
-    user_content = generate_user_content(owner, repo, save_as_md=True)
+    user_content, tree_structure = generate_user_content(owner, repo, save_as_md=True)
 
     chat_bot = ChatGPT()
     chat_bot.feed_user_content_streaming(user_content,

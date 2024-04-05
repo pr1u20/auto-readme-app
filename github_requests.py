@@ -49,7 +49,7 @@ def should_ignore(path, patterns):
     if any(ignore in path.split('/') for ignore in common_ignores):
         return True
     
-    if path.endswith('.pyc'):
+    if path.endswith(('.pyc', '.html')):
         return True
 
     for pattern in patterns:
@@ -58,18 +58,21 @@ def should_ignore(path, patterns):
 
     return False
 
-def get_files_contents(owner, repo, patterns, path=""):
+
+def get_files_and_tree(owner, repo, patterns, path="", level=0):
     """
-    Fetch and decode the content of all files in a GitHub repository, ignoring .gitignore patterns.
+    Fetch and decode the content of all files in a GitHub repository, ignoring .gitignore patterns, and build a tree structure in markdown format.
     
     Parameters:
     - owner (str): Owner of the repository
     - repo (str): Repository name
     - patterns (list): Patterns from .gitignore to ignore
     - path (str, optional): Directory path to start from, default is root
+    - level (int): Current depth in the directory tree for markdown formatting
     
     Returns:
     - Dictionary of {file_path: content} for each file in the repository
+    - String representing the tree structure in markdown format
     """
     api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
     headers = get_headers()
@@ -77,18 +80,25 @@ def get_files_contents(owner, repo, patterns, path=""):
     items = response.json()
     
     contents = {}
+    tree_md = ""  # Markdown formatted tree
+    
     for item in items:
         if should_ignore(item['path'], patterns):
-            continue  # Skip files matched by .gitignore patterns
+            continue  # Skip files and directories matched by .gitignore patterns
         
-        if item['type'] == 'file':
-            file_content_response = requests.get(item['download_url'])
+        indent = "    " * level  # Adjust indent based on level
+        if item['type'] == 'dir':
+            tree_md += f"{indent}- **{item['name']}/**\n"
+            dir_contents, dir_tree = get_files_and_tree(owner, repo, patterns, item['path'], level + 1)
+            contents.update(dir_contents)
+            tree_md += dir_tree
+        elif item['type'] == 'file':
+            tree_md += f"{indent}- {item['name']}\n"
+            file_content_response = requests.get(item['download_url'], headers=headers)
             file_content = file_content_response.text
             contents[item['path']] = file_content
-        elif item['type'] == 'dir':
-            contents.update(get_files_contents(owner, repo, patterns, item['path']))
     
-    return contents
+    return contents, tree_md
 
 def generate_user_content(owner, repo, save_as_md=False):
     """
@@ -108,7 +118,7 @@ def generate_user_content(owner, repo, save_as_md=False):
     patterns = fetch_gitignore_patterns(owner, repo)
 
     # Fetch repository contents respecting .gitignore
-    contents = get_files_contents(owner, repo, patterns)
+    contents, tree_structure = get_files_and_tree(owner, repo, patterns)
 
     user_content = ""
     for file_path, content in contents.items():
@@ -124,10 +134,10 @@ def generate_user_content(owner, repo, save_as_md=False):
             md_file.write(user_content)
             print(f"Content saved to {md_filename}")
 
-    return user_content
+    return user_content, tree_structure
 
 if __name__ == "__main__":
     owner = "pr1u20"  # Replace with the repository owner's username
     repo = "pyaocs"  # Replace with the repository name
-    user_content = generate_user_content(owner, repo, save_as_md=True)
+    user_content, tree_structure = generate_user_content(owner, repo, save_as_md=True)
 

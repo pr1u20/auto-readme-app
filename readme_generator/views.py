@@ -2,37 +2,55 @@ from django.shortcuts import render
 from django.http import HttpResponse
 import os
 from github_requests import generate_user_content  # Adjust the import path as necessary
-from chatgpt_requests import ChatGPT
-import markdown
-from django.http import JsonResponse
+
 
 def index(request):
-    chatgpt = ChatGPT()
+    return render(request, 'index.html')
 
-    if request.method == 'POST':
-        repo_url = request.POST.get('repo_url', '')
-        if repo_url:
-            owner, repo = repo_url.split('/')[-2:]  # Extract owner and repo name from URL
-            
-            user_content = generate_user_content(owner, repo)
+"""
+class RealTimeChatGPT(ChatGPT):
+        
+    def __init__(self):
 
-            response_stream = chatgpt.get_stream(user_content, 
-                                              additional_context = None)
+        self.chatgpt = ChatGPT()
+        self.response_stream = None
 
-        # Process the stream as it arrives.
-        for completion in response_stream:
-            
-            chatgpt.data_processing(completion)
+    def index(self, request):
 
-            # In your index view
-            request.session['readme_content_html'] = chatgpt.content_html
-            request.session.modified = True
+        if request.method == 'POST':
+            repo_url = request.POST.get('repo_url', '')
+            if repo_url:
+                owner, repo = repo_url.split('/')[-2:]  # Extract owner and repo name from URL
+                
+                user_content = generate_user_content(owner, repo)
+
+                self.response_stream = self.chatgpt.get_stream(user_content, 
+                                                additional_context = None)
+
+        return render(request, 'index.html', {'readme_content': self.chatgpt.content_html})
     
-    return render(request, 'index.html', {'readme_content': chatgpt.content_html})
+    async def update_content(self, request):
+        # Here, generate or retrieve your updated HTML content
+
+        if self.response_stream is not None:
+            # Process the stream as it arrives.
+            for completion in self.response_stream:
+                
+                self.chatgpt.data_processing(completion)
+
+        return render(request, 'index.html', {'readme_content': self.chatgpt.content_html})
+
 
 def get_updated_content(request):
     # Here, generate or retrieve your updated HTML content
     
-    updated_html_content = request.session.get('readme_content_html', 'No new content.')
+    try:
+        latest_content = ProcessedContent.objects.latest('timestamp')
+        updated_html_content = latest_content.content_html
+    except ProcessedContent.DoesNotExist:
+        updated_html_content = "No content available yet."
+
+    print(updated_html_content)
 
     return JsonResponse({"html_content": updated_html_content})
+"""

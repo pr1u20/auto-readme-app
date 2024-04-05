@@ -44,31 +44,50 @@
                 <label for="repo_url">GitHub Repository URL:</label>
                 <input type="text" class="form-control" id="repo_url" name="repo_url" required placeholder="Enter GitHub Repository URL">
             </div>
-            <button type="submit" class="btn btn-primary">Generate README</button>
+            <button type="submit" id="submitRepo" class="btn btn-primary">Generate README</button>
         </form>
-        
-        <!--{% if readme_content %}-->
+
         <!-- Adjusted Container for Styled Markdown Content -->
         <h2>Generated README:</h2>
+        <div id = "tree-content"></div>
         <div id="readme-content">
             <!-- Dynamic content will be injected here -->
-            {{ readme_content|safe }}
+            <!--{{ readme_content|safe }}-->
         </div>
-        <!--{% endif %}-->
+
     </div>
 
     <script>
-        function fetchUpdates() {
-            fetch('/get-updated-content/')
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Received data:", data); // Log the received data
-                    document.getElementById('readme-content').innerHTML = data.html_content;
-                })
-                .catch(error => console.error('Error fetching updated content:', error));
-        }
-        // Update content every 5 seconds
-        setInterval(fetchUpdates, 1000);
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('#readme-content').innerHTML = 'Test content';
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatSocket = new WebSocket(
+                'ws://' + window.location.host + '/ws/chatgpt/'
+            );
+
+            chatSocket.onmessage = function(e) {
+                console.log("Received data:", e.data); // Log the raw received data
+                const data = JSON.parse(e.data);
+                console.log("Parsed data:", data); // Log the parsed data
+
+                document.querySelector('#readme-content').innerHTML = data.message;
+                document.querySelector('#tree-content').innerHTML = data.tree;
+            };
+
+            chatSocket.onclose = function(e) {
+                console.error('Chat socket closed unexpectedly');
+            };
+
+            document.querySelector('#submitRepo').onclick = function(e) {
+                const repoUrl = document.querySelector('#repo_url').value;
+                chatSocket.send(JSON.stringify({
+                    'repo_url': repoUrl
+                }));
+                e.preventDefault();
+            };
+        });
     </script>
 
     <!-- Bootstrap JS, Popper.js, and jQuery -->

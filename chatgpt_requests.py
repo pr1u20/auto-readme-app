@@ -3,11 +3,16 @@ import os
 from github_requests import generate_user_content
 import markdown
 from markdown.extensions import Extension
+import pypandoc
+
+def markdown_to_html(markdown_text):
+    # Convert Markdown to HTML using pandoc
+    output = pypandoc.convert_text(markdown_text, 'html', format='md')
+    return output
 
 class ChatGPT():
     def __init__(self):
         self.client = OpenAI()
-        self.md_converter = markdown.Markdown(extensions=[YourCustomMarkdownExtension()])
         self.content_md = ""
         self.content_html = ""
     
@@ -43,12 +48,9 @@ class ChatGPT():
             print(content, end ="")
 
             # Convert the Markdown chunk to HTML
-            html_chunk = self.md_converter.convert(self.content_md)
+            html_chunk = markdown_to_html(self.content_md)
             # Append or merge the HTML chunk to your existing HTML content
             self.content_html = html_chunk
-
-            # Optionally, reset the internal state of the Markdown converter if needed
-            self.md_converter.reset()
 
 
     def get_stream(self, user_content, additional_context=None):
@@ -71,12 +73,6 @@ class ChatGPT():
         with open(path, 'w', encoding='utf-8') as md_file:
             md_file.write(self.content_md)
             print(f"Content saved to {filename}")
-
-
-class YourCustomMarkdownExtension(Extension):
-    def extendMarkdown(self, md):
-        # Here you can add custom processors, patterns, or postprocessors to the Markdown converter
-        pass
 
 
 if __name__ == "__main__":

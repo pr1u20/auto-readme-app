@@ -1,9 +1,10 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from github_requests import generate_user_content  # Adjust the import path as necessary
-from chatgpt_requests import ChatGPT
+from chatgpt_requests import ChatGPT, markdown_to_html
 import asyncio
 import markdown
+import pypandoc
 
 
 class ChatGPTConsumer(AsyncWebsocketConsumer):
@@ -23,7 +24,8 @@ class ChatGPTConsumer(AsyncWebsocketConsumer):
         if repo_url:
             owner, repo = repo_url.split('/')[-2:]
             user_content, tree_structure = generate_user_content(owner, repo)
-            tree_html = markdown.markdown(tree_structure)
+            #tree_html = markdown.markdown(tree_structure)
+            tree_html = markdown_to_html(tree_structure)
 
             # Assuming get_stream is an async generator
             for completion in self.chatgpt.get_stream(user_content, additional_context=None):

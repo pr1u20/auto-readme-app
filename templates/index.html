@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/default.min.css">
     <!-- GitHub Markdown CSS for styling -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+
 
     <!-- Marked library for markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -19,8 +21,101 @@
             background-color: #f8f9fa;
         }
         .container {
-            max-width: 800px; /* Adjusted width */
+            margin-left: 240px; /* Offset the container to the right of the sidebar */
+            width: calc(100% - 240px); /* Adjust the width accounting for the sidebar */
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
+
+        /* NAViGATION STYLES */
+
+        .sidebar {
+            position: fixed; /* Make the sidebar fixed to stay in view */
+            top: 0;
+            left: 0;
+            width: 200px; /* Fixed width for the sidebar */
+            height: 100vh; /* Full vertical height */
+            background-color: #f8f9fa; /* Light background for the sidebar */
+            border-right: 2px solid #dee2e6; /* Right border for a defined edge */
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Shadow for depth */
+        }
+
+        .nav {
+            display: flex;
+            flex-direction: column; /* Stack navigation items vertically */
+            align-items: start; /* Align items to the start of the flex container */
+            margin-top: 50px;
+        }
+
+        .nav-link {
+            padding: 10px 15px;
+            margin: 5px 0;
+            color: #007bff;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: #0062cc;
+            color: white;
+        }
+
+
+        /* SEARCH COMNTENT */
+
+        .input-form {
+            position: fixed; /* Fixed position to keep it at the bottom */
+            bottom: 0;
+            background: white;
+            box-shadow: 0px -2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            margin-top: 20px;
+            margin-right: 80px;
+            padding: 5px;
+            border-radius: 15px;  /* Larger radius for a smoother, rounder look */
+            border: 1px solid #a9abad;
+            font-size: 18px;  /* Larger font size for better readability */
+            width: calc(90% - 300px); /* Adjust width accounting for the sidebar */
+        }
+
+        .input-group {
+            width: 100%;
+        }
+
+        #repo_url {
+            width: 250px; /* Adjust the width accounting for the sidebar */
+        }
+
+        .form-control {
+            font-size: 18px;  /* Larger font size for better readability */
+            height: auto;  /* Adjust height to fit content and padding */
+            padding: 10px;  /* More padding for better text input visibility */
+            border-radius: 8px;  /* Rounded borders for the input field */
+            border: 0px;  /* Remove default border */
+            margin-left: 10px;
+
+        }
+
+        .btn {
+            margin: 10px;
+        }
+
+
+        /* README CONTENT */
+        .content-area {
+            padding: 20px;
+            padding-bottom: 70px; /* Padding to ensure content does not overlap with the input form */
+            overflow-y: auto; /* Allows scrolling */
+            height: calc(100vh - 200px);
+            display: flex;
+            flex-direction: column; /* Newest content at the bottom column-reverse */
+            position: relative;
+            scroll-behavior: smooth; /* Smooth scrolling */
+        }
+
         #readme-content {
             background-color: #fff;
             border: 1px solid #dee2e6;
@@ -36,44 +131,123 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="mb-4 text-center">GitHub README Generator</h1>
-        <form method="post" class="mb-3">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="repo_url">GitHub Repository URL:</label>
-                <input type="text" class="form-control" id="repo_url" name="repo_url" required placeholder="Enter GitHub Repository URL">
-            </div>
-            <button type="submit" id="submitRepo" class="btn btn-primary">Generate README</button>
-        </form>
+    <!-- Inside the body tag -->
 
-        <!-- Adjusted Container for Styled Markdown Content -->
-        <h2>Generated README:</h2>
-        <div id = "tree-content"></div>
-        <div id="readme-content">
-            <!-- Dynamic content will be injected here -->
-            <!--{{ readme_content|safe }}-->
+    <div class="container">
+        <h1 class="mb-4 text-left">GitHub README Generator</h1>
+        <div class="sidebar">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" id="nav-readme" href="#">README</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="nav-structure" href="#">Structure</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="nav-user-content" href="#">User Content</a>
+                </li>
+            </ul>
         </div>
 
+
+        <div class="content-area">
+            <div id="readme-content">
+                <!-- README content goes here -->
+            </div>
+            <div id="tree-content" style="display: none;"></div>
+            <div id="user-content" style="display: none;">
+                <!-- User content goes here -->
+            </div>
+        </div>
+
+        <form method="post" class="input-form">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="text" class="form-control" id="repo_url" name="repo_url" required placeholder="Enter GitHub Repository URL">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="submit" id="submitRepo">
+                        <i class="fas fa-arrow-right"></i> <!-- Using right arrow icon -->
+                    </button>
+                </div>
+            </div>
+        </form>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelector('#readme-content').innerHTML = 'Test content';
-        });
 
         document.addEventListener('DOMContentLoaded', function() {
-            const chatSocket = new WebSocket(
-                'ws://' + window.location.host + '/ws/chatgpt/'
-            );
+            const navReadme = document.getElementById('nav-readme');
+            const navStructure = document.getElementById('nav-structure');
+            const navUserContent = document.getElementById('nav-user-content');
+        
+            const readmeContent = document.getElementById('readme-content');
+            const treeContent = document.getElementById('tree-content');
+            const userContent = document.getElementById('user-content');
+        
+            navReadme.addEventListener('click', function() {
+                readmeContent.style.display = 'block';
+                treeContent.style.display = 'none';
+                userContent.style.display = 'none';
+                updateActive(navReadme);
+            });
+        
+            navStructure.addEventListener('click', function() {
+                readmeContent.style.display = 'none';
+                treeContent.style.display = 'block';
+                userContent.style.display = 'none';
+                updateActive(navStructure);
+            });
+        
+            navUserContent.addEventListener('click', function() {
+                readmeContent.style.display = 'none';
+                treeContent.style.display = 'none';
+                userContent.style.display = 'block';
+                updateActive(navUserContent);
+            });
+        
+            function updateActive(activeNav) {
+                [navReadme, navStructure, navUserContent].forEach(nav => {
+                    nav.classList.remove('active');
+                });
+                activeNav.classList.add('active');
+            }
+        });
+    
+    </script>
+    
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chatgpt/');
+            let isFirstMessage = true; // Flag to check if it's the first message
+
+            const readmeContent = document.getElementById('readme-content');
+            const treeContent = document.getElementById('tree-content');
+            const userContent = document.getElementById('user-content');
+            const contentArea = document.querySelector('.content-area');
+
+            // readmeContent.style.display = 'none';
 
             chatSocket.onmessage = function(e) {
                 console.log("Received data:", e.data); // Log the raw received data
                 const data = JSON.parse(e.data);
                 console.log("Parsed data:", data); // Log the parsed data
 
-                document.querySelector('#readme-content').innerHTML = data.message;
-                document.querySelector('#tree-content').innerHTML = data.tree;
+                if (isFirstMessage) {
+                    // Update tree content only on the first message
+                    treeContent.innerHTML = data.tree;
+                    userContent.innerHTML = data.user_content;
+                    isFirstMessage = false; // Reset flag after updating tree content
+                }
+                else {
+                    // Update README content on subsequent messages
+                    readmeContent.innerHTML = data.message;
+                    // Automatically scroll to the bottom of the content area
+                    contentArea.scrollTop = contentArea.scrollHeight;
+
+                }
             };
 
             chatSocket.onclose = function(e) {
@@ -90,6 +264,8 @@
         });
     </script>
 
+    </script>
+
     <!-- Bootstrap JS, Popper.js, and jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
@@ -97,6 +273,6 @@
     <!-- Highlight.js Script for Syntax Highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
     <script>hljs.initHighlightingOnLoad();</script>
+    
 </body>
 </html>
-

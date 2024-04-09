@@ -26,11 +26,18 @@ class ChatGPTConsumer(AsyncWebsocketConsumer):
             user_content, tree_structure = generate_user_content(owner, repo)
             #tree_html = markdown.markdown(tree_structure)
             tree_html = markdown_to_html(tree_structure)
+            user_content_html = markdown_to_html(user_content)
+
+            await self.send(text_data=json.dumps({'tree': tree_html,
+                                                  'message': self.chatgpt.content_html,
+                                                  'user_content': user_content_html}))
+            await asyncio.sleep(0.02)  # Adjust the delay as needed
 
             # Assuming get_stream is an async generator
             for completion in self.chatgpt.get_stream(user_content, additional_context=None):
                 self.chatgpt.data_processing(completion)
                 # Send update to the client
-                await self.send(text_data=json.dumps({'message': self.chatgpt.content_html,
-                                                      'tree': tree_html}))
+                
+                await self.send(text_data=json.dumps({'tree': tree_html,
+                                                    'message': self.chatgpt.content_html}))
                 await asyncio.sleep(0.02)  # Adjust the delay as needed
